@@ -1,0 +1,12 @@
+---
+#
+# NFS mount, unmount software repository for AIX and Linux
+# /var/lib/awx/projects/project/roles/mount_unmount_software_repository_nfs/defaults/main.yml contains default variables 
+# to be passed as parameters to script nfs_unmount_mount.sh. These default variables can be changed or overridden with job template survey.
+#
+#
+- hosts: all
+  strategy: free
+  tasks:
+    - import_role:
+        name: mount_unmount_software_repository_nfs

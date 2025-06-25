@@ -1,0 +1,195 @@
+---
+#
+# Upgrade WebSphere, HTTP Server on AIX, Linux with Installation Manager imcl install commands for fixpacks and/or interim fixes.
+# Also imcl uninstall and rollback commands can be used for backout of change.
+#
+# /var/lib/awx/projects/project/roles/was_upgrade/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/filesystem_freespace/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/mount_unmount_software_repository_nfs/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/was_http_stop_start/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/was_http_logs_check_errors/defaults/main.yml contains default variables.
+# These default variables can be changed or overridden with job template survey.
+#
+# Review below if Ansible host variable action_start_was will be used.
+#
+- hosts: all
+  become: true
+  become_exe: pbrun
+  become_flags: ''
+  vars:
+    wasadm_home: '/home/wasadm'
+  strategy: free
+  tasks:
+#
+# Validate variable path_search does not contain /
+  - name: Validate variable path_search does not contain /
+    fail:
+      msg: 'Variable path_search value {{ path_search }} contains a / which is not allowed'
+    when: path_search.find('/') != -1
+
+#
+# Check if userid in second field of /etc/rc.was.config from parameter path_search value found in /etc/rc.was.config with output of 0
+# For ansible-lint message 306 Shells that use pipes should set the pipefail option, cannot use due to AIX ksh does not have pipefail
+# From AIX server
+# set -o pipefail && cat /etc/rc.was.config|grep was9|cut -d ';' -f2|wc -l|tr -d ' '
+# ksh: pipefail: 0403-010 A specified flag is not valid for this command.
+#
+# Error message below if permissions do not allow Ansible userid to read file /etc/rc.was.config.
+# Add become:true and become_user:root for all cat /etc/rc.was.config commands below.
+# cat: 0652-050 Cannot open /etc/rc.was.config.
+  - name: Check if userid in second field of /etc/rc.was.config from parameter path_search value {{ path_search }} found in /etc/rc.was.config
+    shell: cat /etc/rc.was.config|grep {{ path_search }}|cut -d ';' -f2|wc -l|tr -d ' '
+    register: output
+    changed_when: output.rc == 0
+      #become: true
+      #become_user: root
+
+  - name: 'Check if no userid found in file /etc/rc.was.config from line containing {{ path_search }}'
+    fail:
+      msg: 'No userid found in file /etc/rc.was.config from line containing {{ path_search }}'
+    when: output.stdout.find('0') != -1
+
+#
+# Get userid in second field of /etc/rc.was.config from parameter path_search value {{ path_search }} found in /etc/rc.was.config
+# For ansible-lint message 306 Shells that use pipes should set the pipefail option, cannot use due to AIX ksh does not have pipefail
+# From AIX server
+# set -o pipefail && cat /etc/rc.was.config|grep was9|cut -d ';' -f2|wc -l|tr -d ' '
+# ksh: pipefail: 0403-010 A specified flag is not valid for this command.
+  - name: Get userid in second field of /etc/rc.was.config from variable path_search value {{ path_search }} found in /etc/rc.was.config
+    shell: cat /etc/rc.was.config|grep {{ path_search }}|cut -d ';' -f2|tr -d ' '|head -1
+    register: output
+    changed_when: output.rc == 0
+      #become: true
+      #become_user: root
+
+# Set variable userid
+  - name: Set variable userid
+    set_fact:
+     userid: '{{ output.stdout }}'
+     cacheable: no
+
+  - name: Output userid
+    debug:
+      msg: userid of {{ userid }}
+
+#
+# Check free space in MB for filesystem
+# Role filesystem_freespace has default variable fileystem to override with Job Template Survey variable filesystem.
+# Role filesystem_freespace has default variable fileystem_freespace_mb to override with Job Template Survey variable filesystem_freespacemb.
+  - import_role:
+      name: filesystem_freespace
+
+#
+# NFS mount the software repository with mountpoint of variable mountpoint with default value of /mnt
+  - import_role:
+      name: mount_unmount_software_repository_nfs
+    vars:
+      actionm: 'mount'
+    when: nfs_mount == true 
+#
+# Check if path/file from variable file_cmds exists for input file of Installation Manager imcl install commands
+  - name: 'Check if {{ file_cmds }} from variable file_cmds exists for input file of Installation Manager imcl install commands'
+    stat:
+      path: '{{ file_cmds }}'
+    register: file_result
+
+  - name: 'Fail if {{ file_cmds }} from variable file_cmds does not exist'
+    fail:
+      msg: '{{ file_cmds }} from variable file_cmds does not exist'
+    when: not file_result.stat.exists
+
+#
+# Stop IBM HTTP Server and WebSphere 
+  - import_role:
+      name: was_http_stop_start
+    vars:
+      actionp: 'stop'
+      userid: '{{ userid }}'
+    when: action_stop == true
+#
+# Upgrade WebSphere, HTTP Server on AIX, Linux with Installation Manager imcl install commands for fixpacks and/or interim fixes
+  - import_role:
+      name: was_upgrade
+
+#
+# Execute Change ownership recursive of /optn/IBM/WebSphere/AppServer to userid:group.
+  - name: 'Change ownership recursive of /{{ path_search }}/{{ websphere_install_dir }} to {{ userid }}:{{ group }}'
+    file:
+      path: '/{{ path_search }}/{{ websphere_install_dir }}'
+      owner: '{{ userid }}'
+      group: '{{ group }}'
+      recurse: yes
+        # become: true
+        #become_user: root
+#
+# Remove other permissions recursive of /optn/IBM/WebSphere/AppServer for IBM WebSphere Appplication Server (WAS)
+# technical specification spreadsheet Section # AS.1.8.1.4, AS.1.8.1.15, AS.1.8.1.16, AS.1.8.1.17, AS.1.8.1.18,
+# AS.1.8.1.19, AS.1.8.1.20, AS.1.8.1.21, AS.1.8.1.22, AS.1.8.1.23, AS.1.8.1.24, AS.1.8.1.25 that is checked by
+# GCM WebSphere security configuration scan.
+  - name: 'Remove other permissions recursive for /{{ path_search }}/{{ websphere_install_dir }}'
+    file:
+      path: '/{{ path_search }}/{{ websphere_install_dir }}'
+      state: directory
+      recurse: yes
+      mode: o-rwx
+        #become: true
+        #become_user: root
+
+#
+# Start IBM HTTP Server and WebSphere.
+# Variable action_start of yes that WebSphere servers are to be started.
+  - import_role:
+      name: was_http_stop_start
+    vars:
+      actionp: 'start'
+      userid: '{{ userid }}'
+    when: action_start == 'yes'
+#
+# If all WebSphere servers cannot be automatically started, then comment above statement when: action_start == 'yes' and uncomment statement below.
+#   when: action_start == 'yes' and action_start_was is defined
+#
+# Variable action_start_was set for individual WebSphere server to be started. Add variable action_start_was: yes to Ansible host.
+# This is defined if some individual servers need to be started later manually.
+# Variable action_start_was: yes could also be added to Ansible group of Ansible hosts if group of WebSphere servers to be started.
+#
+# Execute IBM Installation Manager imcl commands listInstalledPackages -long, listInstalledPackages -verbose and output to files.
+# listinstalledpackages_hostname.out, listinstalledpackages_verbose_hostname.out in /tmp/output/was for information on 
+# WebSphere, IBM HTTP Server packages installed.
+  - import_role:
+      name: was_http_list_installed_packages
+        #- meta: end_play
+
+# If file /etc/rc.was.config contains asynch to start WebSphere process(s) in background, sleep for variable action_start_was_sleep value seconds.
+# For WebSphere processes to complete startup before check of WebSphere error, warning messages with role was_http_logs_check_errors below.
+  - name: Check if asynch in file /etc/rc.was.config
+    shell: cat /etc/rc.was.config
+    register: output
+    changed_when: output.rc == 0
+      #become: true
+      #become_user: root
+
+  - name: 'Sleep for {{ action_start_was_sleep }} seconds with /etc/rc.was.config containing asynch to start WebSphere processes in background'
+    shell: sleep {{ action_start_was_sleep }}
+    when: output.stdout.find('asynch') != -1
+
+#
+# To check for error, warning messages in WebSphere SystemOut.log, SystemError.log files and to check for error, warning messages in 
+# IBM HTTP Server error_log_*, http_plugin_log_* log files.
+# Review if default variables in /var/lib/awx/projects/project/roles/was_http_logs_check_errors/defaults/main.yml need to be updated.
+  - include_role:
+      name: was_http_logs_check_errors
+    when: action_start == 'yes'
+#
+# If all WebSphere servers cannot be automatically started, then comment above statement when: action_start == 'yes' and uncomment statement below. 
+#   when: action_start == 'yes' and action_start_was is defined
+#
+# Variable action_start_was set for individual WebSphere server to be started. Add variable action_start_was: yes to Ansible host.
+# This is defined if some individual servers need to be started later manually.
+# Variable action_start_was: yes could also be added to Ansible group of Ansible hosts if group of WebSphere servers to be started.
+
+# NFS unmount the software repository with mountpoint of variable mountpoint with default value of /mnt
+  - include_role:
+      name: mount_unmount_software_repository_nfs
+    vars:
+      actionm: 'unmount'
+    when: nfs_unmount == true

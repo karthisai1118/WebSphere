@@ -1,0 +1,19 @@
+---
+#
+# To check for error, warning messages in WebSphere SystemOut.log, SystemError.log files and to check for error, warning messages in 
+# IBM HTTP Server error_log_*, http_plugin_log_* log files.
+#
+# /var/lib/awx/projects/project/roles/was_http_logs_check_errors/defaults/main.yml contains default variables. 
+# These default variables can be changed or overridden with job template survey.
+#
+#
+- hosts: all
+  become: true
+  become_exe: pbrun
+  become_flags: ''
+  vars:
+    wasadm_home: '/home/wasadm'
+  strategy: free
+  tasks:
+    - import_role:
+        name: was_http_logs_check_errors

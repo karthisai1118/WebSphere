@@ -1,0 +1,12 @@
+---
+#
+# Stop or start IBM HTTP Server and WebSphere
+# /var/lib/awx/projects/project/roles/was_http_stop_start/defaults/main.yml contains default variables 
+# to be passed as parameters to script was_http_stop_start.sh. These default variables can be changed or overridden with job template survey.
+#
+#
+- hosts: all
+  strategy: free
+  tasks:
+    - import_role:
+        name: was_http_stop_start

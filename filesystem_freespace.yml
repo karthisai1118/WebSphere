@@ -1,0 +1,14 @@
+---
+#
+# Check free space in MB for filesystem on AIX, Linux.
+# Role filesystem_freespace has default variable fileystem to override with Job Template Survey variable filesystem.
+# Role filesystem_freespace has default variable fileystem_freespace_mb to override with Job Template Survey variable filesystem_freespacemb.
+#
+# /var/lib/awx/projects/project/roles/filesystem_freespace_mb/defaults/main.yml contains default variables.
+#
+#
+- hosts: all
+  strategy: free
+  tasks:
+    - import_role:
+        name: filesystem_freespace

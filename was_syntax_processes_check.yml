@@ -1,0 +1,19 @@
+---
+#
+# Check syntax of file /etc/rc.was.config.
+# Check number of entries for 2nd field userid in /etc/rc.was.config against number of java processes for same userid.
+#
+# /var/lib/awx/projects/project/roles/was_syntax_processes_check/defaults/main.yml contains default variables. 
+# These default variables can be changed or overridden ith job template survey.
+#
+#
+- hosts: all
+  become: true
+  become_exe: pbrun
+  become_flags: ''
+  vars: 
+    wasadm_home: '/home/wasadm'
+  strategy: free
+  tasks:
+    - import_role:
+        name: was_syntax_processes_check

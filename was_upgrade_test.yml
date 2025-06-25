@@ -1,0 +1,85 @@
+---
+#
+# Upgrade WebSphere, HTTP Server on AIX, Linux with Installation Manager imcl install commands for fixpacks and/or interim fixes.
+# Also imcl uninstall and rollback commands can be used for backout of change.
+#
+# /var/lib/awx/projects/project/roles/was_upgrade/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/filesystem_freespace/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/mount_unmount_software_repository_nfs/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/was_http_stop_start/defaults/main.yml contains default variables.
+# /var/lib/awx/projects/project/roles/was_http_logs_check_errors/defaults/main.yml contains default variables.
+# These default variables can be changed or overridden with job template survey.
+#
+# Review below if Ansible host variable action_start_was will be used.
+#
+#
+# Validate variable path_search does not contain /
+  - name: Validate variable path_search does not contain /
+    fail:
+      msg: 'Variable path_search value {{ path_search }} contains a / which is not allowed'
+    when: path_search.find('/') != -1
+
+#
+# Check if userid in second field of /etc/rc.was.config from parameter path_search value found in /etc/rc.was.config with output of 0
+# For ansible-lint message 306 Shells that use pipes should set the pipefail option, cannot use due to AIX ksh does not have pipefail
+# From AIX server
+# set -o pipefail && cat /etc/rc.was.config|grep was9|cut -d ';' -f2|wc -l|tr -d ' '
+# ksh: pipefail: 0403-010 A specified flag is not valid for this command.
+#
+# Error message below if permissions do not allow Ansible userid to read file /etc/rc.was.config.
+# Add become:true and become_user:root for all cat /etc/rc.was.config commands below.
+# cat: 0652-050 Cannot open /etc/rc.was.config.
+  - name: Check if userid in second field of /etc/rc.was.config from parameter path_search value {{ path_search }} found in /etc/rc.was.config
+    shell: cat /etc/rc.was.config|grep {{ path_search }}|cut -d ';' -f2|wc -l|tr -d ' '
+    register: output
+    changed_when: output.rc == 0
+      #become: true
+      #become_user: root
+
+  - name: 'Check if no userid found in file /etc/rc.was.config from line containing {{ path_search }}'
+    fail:
+      msg: 'No userid found in file /etc/rc.was.config from line containing {{ path_search }}'
+    when: output.stdout.find('0') != -1
+
+#
+# Get userid in second field of /etc/rc.was.config from parameter path_search value {{ path_search }} found in /etc/rc.was.config
+# For ansible-lint message 306 Shells that use pipes should set the pipefail option, cannot use due to AIX ksh does not have pipefail
+# From AIX server
+# set -o pipefail && cat /etc/rc.was.config|grep was9|cut -d ';' -f2|wc -l|tr -d ' '
+# ksh: pipefail: 0403-010 A specified flag is not valid for this command.
+  - name: Get userid in second field of /etc/rc.was.config from variable path_search value {{ path_search }} found in /etc/rc.was.config
+    shell: cat /etc/rc.was.config|grep {{ path_search }}|cut -d ';' -f2|tr -d ' '|head -1
+    register: output
+    changed_when: output.rc == 0
+      #become: true
+      #become_user: root
+
+# Set variable userid
+  - name: Set variable userid
+    set_fact:
+     userid: '{{ output.stdout }}'
+     cacheable: no
+
+  - name: Output userid
+    debug:
+      msg: userid of {{ userid }}
+
+#
+# Check if path/file from variable file_cmds exists for input file of Installation Manager imcl install commands
+#  - name: 'Check if {{ file_cmds }} from variable file_cmds exists for input file of Installation Manager imcl install commands'
+#    stat:
+#      path: '{{ file_cmds }}'
+#    register: file_result
+
+#  - name: 'Fail if {{ file_cmds }} from variable file_cmds does not exist'
+#    fail:
+#      msg: '{{ file_cmds }} from variable file_cmds does not exist'
+#    when: not file_result.stat.exists
+
+
+#
+# Upgrade WebSphere, HTTP Server on AIX, Linux with Installation Manager imcl install commands for fixpacks and/or interim fixes
+#  - import_role:
+#      name: was_upgrade
+
+

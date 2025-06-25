@@ -1,0 +1,18 @@
+---
+#
+#  tar, gzip backups of WebSphere, HTTP Server install directory and IBM Installation Manager locations.
+#
+# /var/lib/awx/projects/project/roles/was_backup/defaults/main.yml contains default variables. 
+# These default variables can be changed or overridden with job template survey.
+
+#
+- hosts: all
+  become: true
+  become_exe: pbrun
+  become_flags: ''
+  vars:
+    wasadm_home: '/users/wasadm'
+  strategy: free
+  tasks:
+    - import_role:
+             name: was_backup

@@ -1,0 +1,14 @@
+---
+#
+# Execute IBM Installation Manager imcl commands listInstalledPackages -long, listInstalledPackages -verbose and output to files
+# listinstalledpackages_hostname.out, listinstalledpackages_verbose_hostname.out for information on WebSphere, IBM HTTP Server packages installed.
+#
+# /var/lib/awx/projects/project/roles/was_http_list_installed_packages/defaults/main.yml contains default variables. 
+# These default variables can be changed or overridden ith job template survey.
+#
+#
+- hosts: all
+  strategy: free
+  tasks:
+    - import_role:
+        name: was_http_list_installed_packages

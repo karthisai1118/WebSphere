@@ -1,0 +1,15 @@
+#
+# Action of mount or unmount.
+actionm: mount
+#
+# NFS client mountpoint for NFS mount. 
+mountpoint: /mnt
+#
+# NFS server IP address.
+server_ipaddress: 10.15.76.36
+#
+# NFS server filesystem exported. 
+export_path: /workfs/Software/
+#
+# Location of redirected standard output, standard error messages log files. /mount is appended for /var/log/ansible/mount
+log_dir: /tmp/ansible

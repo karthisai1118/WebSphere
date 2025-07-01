@@ -1,0 +1,20 @@
+---
+#
+# Check free space in MB for filesystem
+- name: 'Fail when {{ filesystem }} is not mounted'
+  fail:
+    msg: '{{ filesystem }} is not mounted'
+  when: ansible_mounts | selectattr('mount', 'equalto', filesystem) | list | length == 0
+
+- name: 'Check that free space in MB on {{ filesystem }} is greater than {{ filesystem_freespace_mb }} '
+  assert:
+    that: item.size_available / 1048576 > filesystem_freespace_mb
+  when: item.mount == filesystem
+  with_items: '{{ ansible_mounts }}'
+  ignore_errors: True
+  register: filesystem_free_mb
+
+- name: 'Fail when {{ filesystem }} has less than {{ filesystem_freespace_mb }} MB free'
+  fail:
+    msg: 'Filesystem {{ filesystem }} has less than {{ filesystem_freespace_mb }} MB free'
+  when: filesystem_free_mb is failed

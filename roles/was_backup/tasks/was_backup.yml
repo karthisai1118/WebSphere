@@ -1,0 +1,64 @@
+---
+#
+# tar, gzip backups of WebSphere, HTTP Server install directory and IBM Installation Manager locations.
+#
+- name: Create {{ log_dir }}/was for logs of standard output, error messages
+  file:
+    path: "{{ log_dir }}/was"
+    state: directory
+    mode: '0755'
+      #  become: true
+      # become_user: root
+
+- name: Copy script was_backup.sh to temporary directory
+  copy:
+    src: files/was_backup.sh
+    dest: "{{ wasadm_home }}/"
+    mode: '0777'
+
+- name: 'Location of tar, gzip backups is {{ location_backup }}/{{ inventory_hostname_short }}'
+  set_fact:
+    location_backup_dir: "{{ location_backup }}/{{ inventory_hostname_short }}"
+    cacheable: no
+  when: subdir_hostname == 'yes'
+
+- name: 'Location of tar, gzip backups is {{ location_backup }}'
+  set_fact:
+    location_backup_dir: "{{ location_backup }}"
+    cacheable: no
+  when: subdir_hostname == 'no'
+
+- name: 'tar, gzip backups of WebSphere, HTTP Server install directory and IBM Installation Manager locations'
+  shell: su - wasadm -c "{{ wasadm_home }}/was_backup.sh {{ location_backup_dir }} > {{ log_dir }}/was/was_backup.out  2>&1"
+  register: script
+  ignore_errors: True
+  changed_when: script.rc == 0
+    #become: true
+    #become_user: root
+
+- name: Permit access to read log files in {{ log_dir }}/was
+  command: chmod -R 777 {{ log_dir }}/was
+  args:
+    warn: false
+  changed_when: false
+    #become: true
+    #become_user: root
+
+- name: 'Store content of {{ log_dir }}/was/was_backup.out in variable output when script was_backup.sh fails'
+  command: cat {{ log_dir }}/was/was_backup.out
+  register: output
+  when: script.rc != 0
+
+- name: 'Output of {{ log_dir }}/was/was_backup.out when script was_backup.sh fails'
+  debug:
+    var: output.stdout_lines
+  failed_when: script.rc != 0
+  when: script.rc != 0
+
+# Delete script
+- name: Delete file "{{ wasadm_home }}/was_backup.sh"
+  file:
+    path: "{{ wasadm_home }}/was_backup.sh"
+    state: absent
+      #become: true
+      #become_user: root

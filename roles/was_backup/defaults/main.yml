@@ -1,0 +1,9 @@
+#
+# Directory location to store tar, gzip backup files of WebSphere, HTTP Server install directory and IBM Installation Manager locations.
+location_backup_dir: /backupConfig/was
+#
+# Add subdirectory of short hostname to location_backup. Values of yes or no.
+subdir_hostname: yes
+#
+# Location of redirected standard output, standard error messages log files. /was is appended for /var/log/ansible/was
+log_dir: /tmp/ansible

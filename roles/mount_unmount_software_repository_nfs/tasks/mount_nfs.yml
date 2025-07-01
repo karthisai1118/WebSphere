@@ -1,0 +1,98 @@
+---
+#
+# NFS mount the software repository with mountpoint of variable mountpoint
+#
+# Create log directory for logs of standard output, error messages
+- name: Create {{ log_dir }}/mount for logs of standard output, error messages
+  file:
+    path: "{{ log_dir }}/mount"
+    state: directory
+    mode: '0755'
+      # become: true
+      #become_user: root
+
+# Create NFS client mountpoint if does not exist
+# If NFS read-only mount of /mnt exists, add ignore_errors: True to not fail on messsage 
+# The file system has read permission only.: '/mnt'
+- name: Create NFS client {{ mountpoint }} if does not exist
+  file:
+    path: "{{ mountpoint }}"
+    state: directory
+    mode: '0755'
+      #become: true
+      #become_user: root
+  ignore_errors: True
+  when: actionm == 'mount'
+
+- name: Copy script nfs_unmount_mount.sh to temporary directory
+  copy:
+    src: files/nfs_unmount_mount.sh
+    dest: "{{ wasadm_home }}/"
+    mode: '0750'
+  when: actionm == 'mount'
+
+- name: NFS mount the software repository
+  shell: "{{ wasadm_home }}/nfs_unmount_mount.sh {{ server_ipaddress }} {{ export_path }} {{ mountpoint }} > {{ log_dir }}/mount/nfs_mount.out 2>&1"
+  register: script
+  ignore_errors: True
+    #become: true
+    #become_user: root
+  when: actionm == 'mount'
+
+- name: Permit access to read log files in {{ log_dir }}/mount
+  command: chmod -R 755 {{ log_dir }}/mount
+  args:
+    warn: false
+      #become: true
+      #become_user: root
+  when: actionm == 'mount'
+
+- name: Store content of {{ log_dir }}/mount/nfs_mount.out in variable output when script nfs_unmount_mount.sh fails to mount
+  command: cat {{ log_dir }}/mount/nfs_mount.out
+  register: output
+  when: actionm == 'mount' and script.rc != 0
+
+- name: Output of {{ log_dir }}/mount/nfs_mount.out when script nfs_unmount_mount.sh fails to mount
+  debug:
+    var: output.stdout_lines
+  failed_when: actionm == 'mount' and script.rc != 0
+  when: actionm == 'mount' and script.rc != 0
+
+#
+# Unmount the software repository
+- name: Unmount the software repository
+  shell: umount {{ mountpoint }} > {{ log_dir }}/mount/nfs_unmount.out 2>&1
+  register: cmd
+  ignore_errors: True
+    #become: true
+    #become_user: root
+  when: actionm == 'unmount'
+
+- name: Permit access to read log files in {{ log_dir }}/mount
+  command: chmod -R 755 {{ log_dir }}/mount
+  args:
+    warn: false
+      #become: true
+      #become_user: root
+  when: actionm == 'unmount'
+
+- name: Store content of {{ log_dir }}/mount/nfs_unmount.out in variable output when command fails to unmount
+  command: cat {{ log_dir }}/mount/nfs_unmount.out
+  register: output
+  when: actionm == 'unmount' and cmd.rc != 0
+
+- name: Output of {{ log_dir }}/mount/nfs_unmount.out when command fails to unmount
+  debug:
+    var: output.stdout_lines
+  failed_when: actionm == 'unmount' and cmd.rc != 0
+  when: actionm == 'unmount' and cmd.rc != 0
+
+#
+# Delete script
+- name: "Delete file {{ wasadm_home }}/nfs_unmount_mount.sh"
+  file:
+    path: "{{ wasadm_home }}/nfs_unmount_mount.sh"
+    state: absent
+      #become: true
+      #become_user: root
+      #when: actionm == 'mount'

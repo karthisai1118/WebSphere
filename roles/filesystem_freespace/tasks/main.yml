@@ -1,0 +1,5 @@
+---
+#
+# Check freespace in MB for filesystem on AIX, Linux.
+- import_tasks: filesystem_freespace.yml
+  when: ansible_facts['os_family'] == 'AIX' or ansible_facts['os_family'] == 'RedHat' or ansible_facts['os_family'] == 'Suse'

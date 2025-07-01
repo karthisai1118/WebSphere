@@ -1,0 +1,5 @@
+# Filesystem for free space in MB check.
+filesystem: /apps
+#
+# Check filesystem has free space in MB greater than value of variable fileystem_freespace_mb
+filesystem_freespace_mb: 2000

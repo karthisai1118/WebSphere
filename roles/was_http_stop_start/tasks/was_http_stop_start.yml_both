@@ -1,0 +1,80 @@
+---
+#
+# Stop or start IBM HTTP Server and WebSphere
+#
+# Create log directory for logs of standard output, error messages
+- name: Create {{ log_dir }}/was for logs of standard output, error messages
+  file:
+    path: "{{ log_dir }}/was"
+    state: directory
+    mode: '0777'
+      #become: true
+      #become_user: root
+
+- name: Copy script was_http_stop_start.sh to temporary directory
+  copy:
+    src: files/was_http_stop_start.sh
+    dest: "{{ wasadm_home }}/"
+    mode: '0777'
+
+- name: '{{ actionp }} IBM HTTP server and WebSphere processes of Deployment Manager, Node Agent, Application Servers'
+  shell: "{{ wasadm_home }}/was_http_stop_start.sh {{ actionp }} > {{ log_dir }}/was/was_http_{{ actionp }}.out 2>&1"
+  register: script
+  ignore_errors: True
+    #become: true
+    #become_user: root
+  when: userid == 'no_userid'
+
+- name: Permit access to read log files in {{ log_dir }}/was
+  command: chmod -R 777 {{ log_dir }}/was
+  args:
+    warn: false
+      #become: true
+      #become_user: root
+  when: userid == 'no_userid'
+
+- name: 'Store content of {{ log_dir }}/was/was_http_{{ actionp }}.out in variable output when script was_http_stop_start.sh fails'
+  command: cat {{ log_dir }}/was/was_http_{{ actionp }}.out
+  register: output
+  when: userid == 'no_userid' and script.rc != 1
+
+- name: 'Output of {{ log_dir }}/was/was_http_{{ actionp }}.out when script was_http_stop_start.sh fails'
+  debug:
+    var: output.stdout_lines
+  failed_when: userid == 'no_userid' and script.rc != 1
+  when: userid == 'no_userid' and script.rc != 1
+
+- name: '{{ actionp }} IBM HTTP server and WebSphere processes of Deployment Manager, Node Agent, Application Servers for userid {{ userid }}'
+  shell: "{{ wasadm_home }}/was_http_stop_start.sh {{ actionp }} {{ userid }} > {{ log_dir }}/was/was_http_{{ actionp }}.out 2>&1"
+  register: script2
+  ignore_errors: True
+    #become: true
+    #become_user: root
+  when: userid != 'no_userid'
+
+- name: Permit access to read log files in {{ log_dir }}/was
+  command: chmod -R 777 {{ log_dir }}/was
+  args:
+    warn: false
+      #become: true
+      #become_user: root
+  when: userid != 'no_userid'
+
+- name: 'Store content of {{ log_dir }}/was/was_http_{{ actionp }}.out in variable output when script was_http_stop_start.sh fails'
+  command: cat {{ log_dir }}/was/was_http_{{ actionp }}.out
+  register: output
+  when: userid != 'no_userid' and script2.rc != 1
+
+- name: 'Output of {{ log_dir }}/was/was_http_{{ actionp }}.out when script was_http_stop_start.sh fails'
+  debug:
+    var: output.stdout_lines
+  failed_when: userid != 'no_userid' and script2.rc != 1
+  when: userid != 'no_userid' and script2.rc != 1
+
+# Delete script
+- name: "Delete file {{ wasadm_home }}/was_http_stop_start.sh"
+  file:
+    path: "{{ wasadm_home }}/was_http_stop_start.sh"
+    state: absent
+      #become: true
+      #become_user: root

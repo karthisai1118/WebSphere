@@ -1,0 +1,84 @@
+---
+#
+# To check for error, warning messages in WebSphere SystemOut.log, SystemError.log files and
+# to check for error, warning messages in IBM HTTP Server error_log_*, http_plugin_log_* log files.
+# Variable days for number of days for log file modification less than days x 24 hours ago to
+# find log files in filesystems that start with variable fs_starts_with. Default value is 1 day for parameter days.
+# Variable fs_starts_with for filesystems that starts with to search for WebSphere, HTTP logs. Default is /logs.
+#
+# Create log directory for logs of standard output, error messages
+- name: Create {{ log_dir }}/was for logs of standard output, error messages
+  file:
+    path: "{{ log_dir }}/was"
+    state: directory
+    mode: '0777'
+      #  become: true
+      #become_user: root
+
+- name: Copy script was_http_logs_check_errors.sh to temporary directory
+  copy:
+    src: files/was_http_logs_check_errors.sh
+    dest: "{{ wasadm_home }}/"
+    mode: '0777'
+
+- name: 'Execute script was_http_logs_check_errors.sh'
+  shell:  su - wasadm -c "{{ wasadm_home }}/was_http_logs_check_errors.sh {{ days }} {{ filesystem_starts_with }} > {{ log_dir }}/was/was_http_logs_check_errors.out 2>&1"
+  register: script
+  ignore_errors: True
+  changed_when: script.rc == 0
+    #become: true
+    #become_user: root
+
+- name: Permit access to read log files in {{ log_dir }}/was
+  command: chmod -R 755 {{ log_dir }}/was
+  args:
+    warn: false
+    changed_when: false
+    #become: true
+    #become_user: root
+
+- name: 'Store content of {{ log_dir }}/was/was_http_logs_check_errors.out in variable output when script was_http_logs_check_errors.sh fails'
+  command: cat {{ log_dir }}/was/was_http_logs_check_errors.out
+  register: output
+  when: script.rc != 0
+
+- name: 'Output of {{ log_dir }}/was/was_http_logs_check_errors.out when script was_http_logs_check_errors.sh fails'
+  debug:
+    var: output.stdout_lines
+  failed_when: script.rc != 0
+  when: script.rc != 0
+
+#
+# Create log directory for logs of standard output, error messages
+- name: Create /tmp/output/was
+  file:
+    path: "/tmp/output/was"
+    state: directory
+    mode: '0755'
+      #become: true
+      #become_user: root
+
+- name: "Delete file /tmp/output/was/was_http_logs_check_errors_{{ ansible_hostname }}.out if exists"
+  file:
+    path: "/tmp/output/was/was_http_logs_check_errors_{{ ansible_hostname }}.out"
+    state: absent
+      #become: true
+      #become_user: root
+
+- name: "Copy {{ log_dir }}/was/was_http_logs_check_errors.out to /tmp/output/was/was_http_logs_check_errors_{{ ansible_hostname }}.out"
+  copy:
+    src: "{{ log_dir }}/was/was_http_logs_check_errors.out"
+    dest: "/tmp/output/was/was_http_logs_check_errors_{{ ansible_hostname }}.out"
+    mode: '0644'
+    remote_src: yes
+    force: yes
+      #become: true
+      #become_user: root
+
+# Delete script
+- name: "Delete file {{ wasadm_home }}/was_http_logs_check_errors.sh"
+  file:
+    path: "{{ wasadm_home }}/was_http_logs_check_errors.sh"
+    state: absent
+      #become: true
+      #become_user: root

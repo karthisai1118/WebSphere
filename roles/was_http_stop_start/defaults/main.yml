@@ -1,0 +1,12 @@
+#
+# Specify value of stop or start to stop or start IBM HTTP Server and WebSphere.
+actionp: stop
+#
+# Number of seconds to sleep after start of HTTP Server, WebSphere if file /etc/rc.was.config contains asynch.
+action_start_was_sleep: 180
+#
+# Location of redirected standard output, standard error messages log files. /was is appended for /var/log/ansible/was
+log_dir: /tmp/ansible
+#
+# Input optional userid for lines in /etc/rc.was.config with second field of userid to stop or start. 
+userid: root

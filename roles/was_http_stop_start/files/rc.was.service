@@ -1,0 +1,21 @@
+# Systemd file for WebSphere
+# https://access.redhat.com/solutions/912263
+# https://access.redhat.com/solutions/4236301
+# TimeoutStartSec set to 0 to disable the timeout logic
+# Script rc.was in /usr/local/bin for Red Hat V8 systemd
+
+[Unit]
+Description=IBM WebSphere processes of Deployment Manager, Node Agent and Application Servers
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/rc.was start
+ExecStop=/usr/local/bin/rc.was stop
+Type=forking
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=0
+TimeoutStopSec=30min
+
+[Install]
+WantedBy=multi-user.target

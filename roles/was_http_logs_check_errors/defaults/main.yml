@@ -1,0 +1,9 @@
+#
+# Number of days for log file modification less than days x 24 hours ago. Defaults to 2 if not specified.
+days: 1
+#
+# Filesystems that starts with for WebSphere, HTTP logs. Defaults to /logs if not specified.
+filesystem_starts_with: /logs
+#
+# Location of redirected standard output, standard error messages log files. /was is appended for /var/log/ansible/was 
+log_dir: /tmp/ansible

@@ -1,0 +1,21 @@
+# Systemd file for IBM HTTP
+# https://access.redhat.com/solutions/912263
+# https://access.redhat.com/solutions/4236301
+# TimeoutStartSec set to 0 to disable the timeout logic
+# Script rc.http in /usr/local/bin for Red Hat V8 systemd
+
+[Unit]
+Description=IBM HTTP processes of apachectl, adminctl 
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/rc.http start
+ExecStop=/usr/local/bin/rc.http stop
+Type=forking
+RemainAfterExit=yes
+Restart=no
+TimeoutStartSec=0
+TimeoutStopSec=15min
+
+[Install]
+WantedBy=multi-user.target

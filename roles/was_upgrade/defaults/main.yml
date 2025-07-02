@@ -1,0 +1,44 @@
+#
+# Stop WebSphere for /etc/rc.was.config entries and stop HTTP Server for /etc/rc.http.config entries containing parameter path_search value.
+action_stop: yes
+#
+# Start WebSphere for /etc/rc.was.config entries and start HTTP Server for /etc/rc.http.config entries containing parameter path_search value.
+# Additional condition to start WebSphere, HTTP Server if server variable action_start_was has value of yes.
+action_start: yes
+#
+# File name with extension of .cmds containing variables, imcl install commands stored in NFS mounted location. 
+# If WebSphere fix pack and interim fixes are being installed, add install statements for interim fixes after install statements for fix pack in this file.
+# Also imcl uninstall and rollback statements.
+#file_cmds: /tmp/was_imcl_install_interim_fix_IF13.cmds
+#file_cmds: /tmp/was_imcl_install_fixpack_FP13.cmds
+#file_cmds: /tmp/was_imcl_install_fixpack_FP12.cmds  
+#file_cmds: /mnt/rafw_media/WAS90/9.0.5.13/filename.cmds
+#
+# For check of free space in MB for WebSphere filesystem like /opt9.
+# Role filesystem_freespace has default variable fileystem to override with Job Template Survey variable filesystem.
+# Role filesystem_freespace has default variable fileystem_freespace_mb to override with Job Template Survey variable filesystem_freespacemb.
+#
+# If previous local site stop, start script used instead of provided scripts rc.was, rc.http then 
+# uncomment this line and specify default userid
+#userid: root
+#
+# Group for chown -R userid:group /path_search/IBM/WebSphere/AppServer after imcl install commands executed. 
+# Userid from second field of /etc/rc.was.config with path containing parameter path_search value. 
+group: wasadm
+#
+# Location of redirected standard output, standard error messages log files. /was is appended for /var/log/ansible/was
+log_dir: /tmp/ansible
+#
+# Mount NFS client mountpoint of /mnt. Values of yes or no.
+nfs_mount: yes
+#
+# Unmount NFS client mountpoint of /mnt. Values of yes or no.
+nfs_unmount: yes
+#
+# Change input to opt9 for WebSphere V9, HTTP Server V9 or opt8 for WebSphere V8.5, HTTP Server V8.5.
+# Do not use value with /. /etc/rc.was.config entries with third field for path and /etc/rc.http.config entries containing variable path_search value
+# will stop or start depending on parameters action_stop, action_start values.
+path_search: apps
+#
+# Websphere installation directory without /patch_search/ at beginning to change ownership of /path_search/IBM/WebSphere/AppServer to userid:group
+websphere_install_dir: WebSphere/AppServer-9.0

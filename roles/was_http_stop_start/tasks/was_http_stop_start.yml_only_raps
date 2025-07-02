@@ -1,0 +1,98 @@
+---
+- name: code block if scope is stop
+  block:
+  - name: stop the application(s) in standalone server
+    #when {{os_family}} == 'AIX'
+    command: /etc/rc.d/init.d/APPSVC stop 
+    when: ansible_facts['os_family'] == 'AIX' or
+      #else {{os_family}} == 'RedHat'
+    command: /etc/init.d/APPSVC stop 
+    register: app_stop
+    failed_when: app_stop.rc > 100
+  
+  - debug: var=app_stop.stdout_lines
+  - debug: var=app_stop.stderr_lines
+  
+  - debug:
+      msg: "RAPS is in off state"
+    when: app_stop.rc == 100
+  
+  - fail:
+      msg: "Unable to stop the apps"
+    when: app_stop.rc != 1
+  
+  - debug:
+      msg: "Apps are stopped"
+    when: app_stop.rc == 1
+  
+  - name: disable APPSVC on startup in server
+    command: /etc/rc.d/init.d/APPSVC off
+    register: app_off
+    failed_when: app_off.rc != 100
+
+  - debug:
+      msg:
+        - 'Disabled APPSVC Startup'
+        - "{{ app_off.stdout_lines }}"
+        - 'Errors: '
+        - "{{ app_off.stderr_lines }}"
+
+  - name: enable rollback if not already
+    set_fact:
+      rollback_flag: true
+      status_msg: "{{ status_msg + ['Enabled rollback as applications are stopped'] }}"
+    when: agent_list|length == 0 
+
+  when: scope == 'stop'
+
+- name: code block if scope is start
+  block:
+  - name: enable APPSVC on startup in server
+    #when {{os_family}} == 'AIX'
+    command: /etc/rc.d/init.d/APPSVC start 
+    when: ansible_facts['os_family'] == 'AIX' or
+      #else {{os_family}} == 'RedHat'
+    command: /etc/init.d/APPSVC start 
+    register: app_on 
+    ignore_errors: True
+
+  - debug:
+      msg:
+        - 'Enabled APPSVC on startup'
+        - "{{ app_on.stdout_lines }}"
+        - 'Errors: '
+        - "{{ app_on.stderr_lines }}"
+    when: app_on.rc == 100
+
+  - debug:
+      msg: "Failed to enable APPSVC on start up. Please do manually"
+    when: app_on.rc != 100
+
+  - name: start the application(s) in standalone server
+    command: /etc/rc.d/init.d/APPSVC start
+    register: app_start
+    ignore_errors: True
+
+  - debug: var=app_start.stdout_lines
+  - debug: var=app_start.stderr_lines
+
+  - debug:
+      msg: "Unable to start the applications. Please do manually"
+    when: app_start.rc == 1
+
+  - debug:
+      msg: "RAPS is in off state. Please check and update manually" 
+    when: app_start.rc == 100
+
+  - debug:
+      msg: "Started All Applications"
+    when: app_start.rc == 0
+
+  when: scope == 'start'
+
+- name: status message
+  set_fact:
+    status_msg: "{{ status_msg + [raps_s_msg] }}"
+  vars:
+    raps_s_msg: "{{ 'RAPS - ' + scope + ' Completed' }}"
+...  

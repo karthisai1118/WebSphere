@@ -1,0 +1,153 @@
+#!/bin/sh
+#
+# Function
+#
+# To start and stop IBM HTTP processes of apachectl, adminctl on AIX, Linux.
+#
+# Parameters:
+# - action of start or stop
+# - filesystem for lines in /etc/rc.http.config that contain filesystem value specified to start or stop
+#
+# Changes:
+# 01/29/2018 Mike McIntyre @001 Add optional second parameter of filesystem
+# 01/08/2020 Mike McIntyre @002 Updated for Linux systemd service
+#
+# For Linux HTTP servers.
+#
+# Start and stop IBM HTTP processes of apachectl, adminctl.
+# First parmeter is action of start or stop.
+http_process_start_stop() {
+#set -x
+action=$1
+filesystem=$2 # @001
+#
+# Check if /etc/rc.http.config exists.
+if [ -f "$file_http_config" ] ; then
+  noop=""
+else
+  echo "File $file_http_config does not exist"
+  exit 1
+fi
+while read line
+do
+  path=$line
+  fsm="N"  # @001 Set fileystem match to N for no.
+#
+# If filesystem specified, check if filesystem found in path.
+  if [ $filesystem != "no" ]; then
+#
+# Test if filesystem found in line for path.
+     if test "${line#*$filesystem}" != "$line"
+     then
+       fsm="Y"  # Set filesystem match to Y for yes.
+     fi
+   fi 
+#
+# @001 If no parameter for filesystem or optional second parameter of filesystem specified found in path.
+  if [ $filesystem == "no" ] || [ $fsm == "Y" ] ; then
+#
+# Check if path exists.
+    if [ -d "$path" ] ; then
+      noop=""
+    else
+      echo "Path $path does not exist"
+      exit 1
+    fi
+    cmd="$path/apachectl $action"
+    echo "$cmd"
+    $cmd
+    rc=$?
+    if [ $rc != 0 ] ; then
+      echo "$cmd failed with return code of $rc"
+      flag_error="Y"
+    fi
+    cmd="$path/adminctl $action"
+    echo "$cmd"
+    $cmd
+    rc=$?
+    if [ $rc != 0 ] ; then
+      echo "$cmd failed with return code of $rc"
+      flag_error="Y"
+    fi
+  fi
+done < $file_http_config
+#
+# @001 Check if all IBM HTTP Server server httpd processes are stopped.
+if [ $action = 'stop' ] ; then
+  sleep 10
+  if [ $filesystem == "no" ]; then
+    num=`ps -ef|grep httpd|grep -v grep|wc -l`
+  else
+    num=`ps -ef|grep httpd|grep $filesystem|grep -v grep|wc -l`
+  fi
+  count=`echo $num | tr '[0123456789]' '[0123456789]'`
+  if [ $count -gt  0 ] ; then
+    if [ $filesystem == "no" ]; then
+      echo "$count httpd processes are still running after IBM HTTP server stop commands"
+    else
+      echo "$count httpd processes with path containing $filesystem are still running after IBM HTTP server stop commands"
+    fi
+    exit 1
+  fi
+fi
+}
+#
+# Main Routine
+#
+# File /etc/rc.http.config contains path to start or stop IBM HTTP processes of apachectl, adminctl. 
+# Example below with path to apachectl and adminctl.
+# /opt8/IBM/IBMHttpServer/bin
+file_http_config="/etc/rc.http.config"
+flag_error="N"
+#
+case "$1" in
+  start)
+    if [ "$#" == 1 ] ; then
+# @001 No optional second parameter of filesystem. Set filesystem to no.
+      filesystem="no"
+      http_process_start_stop start $filesystem
+    fi
+    if [ "$#" == 2 ] ; then
+# @001 Add optional second parameter of filesystem.
+      filesystem="$2"
+# Check if optional second parameter of filesystem value exists in /etc/rc.http.config.
+      count=`cat $file_http_config|grep $filesystem|wc -l`
+      if [ $count == 0 ] ; then
+        echo "Path does not contain $filesystem in file $file_http_config"
+        exit 1
+      fi
+      http_process_start_stop start $filesystem
+    fi
+    if [ $flag_error == "Y" ] ; then
+      echo "Some IBM HTTP server start commands had a non-zero return code"
+      exit 1
+    fi
+  ;;
+  stop)
+    if [ "$#" == 1 ] ; then
+# @001 No optional second parameter of filesystem. Set filesystem to no.
+      filesystem="no"
+      http_process_start_stop stop $filesystem
+    fi
+    if [ "$#" == 2 ] ; then
+# @001 Add optional second parameter of filesystem.
+      filesystem="$2"
+# Check if optional second parameter of filesystem value exists in /etc/rc.http.config.
+      count=`cat $file_http_config|grep $filesystem|wc -l`
+      if [ $count == 0 ] ; then
+        echo "Path does not contain $filesystem in file $file_http_config"
+        exit 1
+      fi
+      http_process_start_stop stop $filesystem
+    fi
+    if [ $flag_error == "Y" ] ; then
+      echo "Some IBM HTTP server stop commands had a non-zero return code"
+      exit 1
+    fi
+  ;;
+  *)
+  echo "Usage: $0 {start|stop}"
+  exit 1
+  ;;
+esac
+exit 0

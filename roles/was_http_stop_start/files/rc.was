@@ -1,0 +1,256 @@
+#!/bin/sh
+#
+# Function
+#
+# To start and stop WebSphere processes of Deployment Manager, Node Agent and Application Servers on AIX, Linux.
+#
+# Parameters:
+# - action of start or stop
+# - userid for lines in /etc/rc.was.config with second field of userid to start or stop
+#
+# Changes:
+# 09/01/2017 Mike McIntyre @001 Add optional second parameter of userid.
+# 03/15/2018 Mike McIntyre @002 Sometimes stopServer.sh has zero return code and does not end java processes.
+# Check if java processes are still running for userid to exit script with non-zero exit code.
+# 03/15/2018 Mike McIntyre @003 If synchronous start, then exit script with non-zero exit code to not start more entries in /etc/rc.was.config.
+# WebSphere support to check why failed before starting more WebSphere application servers that could depend on earlier server started.
+# 03/20/2018 Mike McIntyre @004 Additional syntax check of file /etc/rc.was.config.
+# 01/08/2020 Mike McIntyre @005 Updated for Linux systemd service
+# 01/13/2020 Mike McIntyre @006 Delete file from variable file_was_stop_userids to not leave file /tmp/was_stop_userids.out.
+#
+# For Linux WebSphere servers.
+#
+# Start and stop WebSphere processes.
+# First parameter is the process of dmgr for Deployment Manager or nodeagent for Node Agent or appsrv for Application Server.
+# Second parmeter is action of start or stop.
+# @001 Third parameter of userid. If userid value is no, then no optional parameter userid specified.
+was_process_start_stop() {
+#set -x
+processp=$1
+action=$2
+useridp=$3
+#
+# Deployment Manager start and stop scripts.
+if [ $processp == 'dmgr' -a $action == 'start' ] ; then
+  cmda="startManager.sh" 
+fi
+if [ $processp == 'dmgr' -a $action == 'stop' ] ; then
+  cmda="stopManager.sh"
+fi
+#
+# Node Agent start and stop scripts.
+if [ $processp == 'nodeagent' -a $action == 'start' ] ; then
+  cmda="startNode.sh"
+fi
+if [ $processp == 'nodeagent' -a $action == 'stop' ] ; then
+  cmda="stopNode.sh"
+fi
+#
+# Application Server stop and start scripts.
+if [ $processp == 'appsrv' -a $action == 'start' ] ; then
+  cmda="startServer.sh"
+fi
+if [ $processp == 'appsrv' -a $action == 'stop' ] ; then
+  cmda="stopServer.sh"
+fi
+#
+# Check if /etc/rc.was.config exists.
+if [ -f "$file_was_config" ] ; then
+  noop=""
+else
+  echo "File $file_was_config does not exist"
+  exit 1
+fi
+while read line
+do
+  process=`echo $line|cut -d ';' -f1`
+  if [ $process != 'dmgr' -a $process != 'nodeagent' -a $process != 'appsrv' ] ; then  # @004
+    echo "$line"
+    echo "First field of $process is not value of dmgr or nodeagent or appsrv"
+    exit 1
+  fi
+  if [ $process == $processp ] ; then
+    userid=`echo $line|cut -d ';' -f2`
+#
+# @001 If no parameter for userid or optional second parameter of userid specified.
+    if [ $useridp == "no" ] || [ $userid == $useridp ] ; then    
+#
+# Check if userid exists.
+      count=`cat /etc/passwd|cut -d":" -f1|grep $userid|wc -l`
+      if [ $count -eq 0 ] ; then
+        echo "$line"
+        echo "Userid $userid does not exist"
+        exit 1
+      fi
+      path=`echo $line|cut -d ';' -f3`
+#
+# Check if path/cmda exists.
+      if [ -f "$path/$cmda" ] ; then
+       noop=""
+      else
+        echo "$line"
+        echo "File $path/$cmda does not exist"
+        exit 1
+      fi
+      synch_opt=`echo $line|cut -d ';' -f4`
+      if [ $synch_opt != 'synch' -a $synch_opt != 'asynch' ] ; then  # @004
+        echo "$line"
+        echo "Fourth field of $synch_opt is not value of synch or asynch"
+        exit 1
+      fi
+      if [ $process == 'appsrv' ] ; then
+        profile=`echo $line|cut -d ';' -f5`
+        if test -z "$profile" ; then   # @004 Check if profile is null 
+          echo "$line"
+          echo "Fifth field for profile has no value with first field of appsrv"
+          exit 1
+        fi
+        cmd="$path/$cmda $profile"
+      else 
+        cmd="$path/$cmda"
+      fi
+#
+# synch_opt of asynch for asynchronous execution with & is only for start. 
+# Do not check return code of start of stop command.
+      if [ $synch_opt == 'asynch' -a $action == 'start' ] ; then
+        echo "su - $userid -c '$cmd &'"
+        su - $userid -c "$cmd &"
+#
+# If synch_opt is synch for synchronous, check return code of start or stop command.
+      else
+        echo "su - $userid -c '$cmd'"
+        su - $userid -c "$cmd"
+        rc=$?
+        if [ $rc -ne 0 ] ; then
+          echo "$cmd failed with return code of $rc"
+          flag_error="Y"
+        fi
+#
+# @003 If synchronous start, then exit script with non-zero exit code to not start more entries in /etc/rc.was.config.
+# WebSphere support to check why failed before starting more WebSphere application servers that could depend on earlier server started.
+        if [ $rc -ne 0 -a $action == 'start' -a $synch_opt == 'synch' ] ; then
+          exit 1
+        fi
+      fi
+    fi
+  fi
+done < $file_was_config
+}
+#
+# Main Routine
+#set -x
+#
+# File /etc/rc.was.config contains WebSphere processes to start or stop in format of:
+# process;userid;path;synch_opt;profile
+# synch_opt of asynch for asynchronous execution with & is only for start. 
+# Example below.
+# dmgr;was8;/opt8/IBM/WebSphere/AppServer/profiles/Dmgr01/bin;synch
+# nodeagent;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;synch
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;synch;tiAuditLogger
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;synch;tiadminservice
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;synch;tiadmin
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;synch;tiadminshared
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;asynch;tisales1
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;asynch;tisales2
+# appsrv;was8;/opt8/IBM/WebSphere/AppServer/profiles/AppSrv01/bin;asynch;tisales3
+file_was_config="/etc/rc.was.config"
+flag_error="N"
+file_was_stop_userids="/tmp/was_stop_userids.out" #@002
+#
+case "$1" in
+  start)
+#
+# @001 No optional second parameter of userid. Set userid to no.
+    if [ "$#" -eq 1 ] ; then
+      userida="no"
+      was_process_start_stop dmgr start $userida
+      was_process_start_stop nodeagent start $userida
+      was_process_start_stop appsrv start $userida
+    fi
+#
+# @001 Add optional second parameter of userid value.
+    if [ "$#" -eq 2 ] ; then
+      userida="$2"
+# Check if optional second parameter of userid value exists in /etc/rc.was.config
+      count=`cat $file_was_config|cut -d ';' -f2|grep $userida|wc -l`
+      if [ $count -eq 0 ] ; then
+        echo "Userid $userida does not exist in file $file_was_config"
+        exit 1
+      fi
+      was_process_start_stop dmgr start $userida
+      was_process_start_stop nodeagent start $userida
+      was_process_start_stop appsrv start $userida
+    fi
+    if [ $flag_error == 'Y' ] ; then
+      echo "Some WebSphere start commands had a non-zero return code"
+      exit 1
+    fi
+  ;;
+  stop)
+#
+# @001 No optional second parameter of userid. Set userid to no.
+    if [ "$#" -eq 1 ] ; then
+      userida="no"
+      was_process_start_stop appsrv stop $userida
+      was_process_start_stop nodeagent stop $userida
+      was_process_start_stop dmgr stop $userida
+      sleep 20 # @002
+#
+# @002 Output all unique userids in /etc/rc.was.config to a file.
+      cat $file_was_config|cut -d ";" -f2|uniq>$file_was_stop_userids
+      rc=$?
+#
+# Check if non-zero return code.
+      if [ $rc -ne 0 ] ; then
+        echo "cat $file_was_config|cut -d ";" -f2|uniq>$file_was_stop_userids failed with return code of $rc"
+        exit 1
+      fi
+#
+# @002 Check that there are no java processes running for each userid in /etc/rc.was.config.
+      while read userid_stop
+      do
+        count=`ps -ef|grep java|grep $userid_stop|grep -v grep|wc -l|sed 's/ //g'`
+        if [ $count -ne 0 ] ; then
+          echo "$count java processes for userid $userid_stop are still running from command ps -ef|grep java|grep $userid_stop"
+          flag_error="Y"
+        fi
+      done < $file_was_stop_userids
+    fi
+#
+# @001 Add optional second parameter of userid value.
+    if [ "$#" -eq 2 ] ; then
+      userida="$2"
+#
+# Check if optional second parameter of userid value exists in /etc/rc.was.config
+      count=`cat $file_was_config|cut -d ';' -f2|grep $userida|wc -l`
+      if [ $count -eq 0 ] ; then
+        echo "Userid $userida does not exist in file $file_was_config"
+        exit 1
+      fi
+      was_process_start_stop appsrv stop $userida
+      was_process_start_stop nodeagent stop $userida
+      was_process_start_stop dmgr stop $userida
+#
+      sleep 20 # @002
+#
+# @002 Check that there are no java processes running for userid. 
+      count=`ps -ef|grep java|grep $userida|grep -v grep|wc -l|sed 's/ //g'`
+      if [ $count -ne 0 ] ; then
+        echo "$count java processes for userid $userida are still running from command ps -ef|grep java|grep $userida"
+        flag_error="Y"
+      fi
+    fi
+    if [ $flag_error == 'Y' ] ; then
+      echo "Some WebSphere stop commands did not terminate WebSphere java processes or had non-zero return code"
+      exit 1
+    fi
+  ;;
+  *)
+  echo "Usage: /etc/rc.was action userid"
+  echo "where first parameter action is start or stop"
+  echo "where optional second parameter is userid for lines in /etc/rc.was.config with second field of userid to start or stop"
+  exit 1
+  ;;
+esac
+rm -f $file_was_stop_userids # @006
+exit 0

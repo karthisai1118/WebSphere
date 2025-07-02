@@ -1,0 +1,9 @@
+---
+#
+# To check for error, warning messages in WebSphere SystemOut.log, SystemError.log files and
+# to check for error, warning messages in IBM HTTP Server error_log_*, http_plugin_log_* log files.
+# Optional parameter days for number of days for log file modification less than days x 24 hours ago to find log files in filesystems that start with /logs.
+# Default value is 1 day for parameter days.
+# Check number of entries for 2nd field userid in /etc/rc.was.config against number of java processes for same userid. Status of Failed if mismatch.
+- import_tasks: was_http_logs_check_errors.yml
+  when: ansible_facts['os_family'] == 'AIX' or ansible_facts['os_family'] == 'RedHat' or ansible_facts['os_family'] == 'Suse'

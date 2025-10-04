@@ -535,4 +535,4 @@ group: wasgroup
 <p>Update Ansible Tower Job Template for WebSphere Upgrade for playbook was_upgrade2.yml. Also create a Survey prompt for Ansible variable name userid in Ansible Tower Job Template for playbook was_upgrade2.yml.</p>
 
 <h2>Author Information</h2>
-Bharat Pattem bharat.pattem@kyndryl.com
+

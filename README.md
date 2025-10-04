@@ -70,8 +70,6 @@ check /etc/security/limits on AIX and /etc/security/limits.conf on Linux for def
 
 <p>By default, Ansible playbooks run with a linear strategy, where all targeted endpoints run a task to completion before any endpoint starts on the next task, using the number of forks configured on the Tower Server to parallelize. Under the free strategy, an endpoint that is slow or stuck on a specific task won’t hold up the rest of the endpoints and/or tasks, unlike the situation with the default linear strategy. Above playbooks run with free strategy. </p>
 
-<p>Web link https://kyndryl.box.com/v/demo-ansible-websphere-upgrade contains a recorded demonstration on usage of this project to install WebSphere V9 fixpack and interim fix that can be viewed.</p>
-
 <h2>Environments Tested</h2>
 <ul>
 <li>RedHat - Version 8.5 with WebSphere Network Deployment V9.0.5 installation of fixpack and interim fix</li>
@@ -536,5 +534,6 @@ group: wasgroup
 
 <h2>Author Information</h2>
 Karthisai
+
 
 

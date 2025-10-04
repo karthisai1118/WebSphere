@@ -478,8 +478,8 @@ chmod -R 755 /software/was
 <li>mkdir /c/Ansible</li>
 <li>mkdir /c/Ansible/projects</li>
 <li>cd /c/Ansible/projects</li>
-<li>git clone https://github.com/karthisai1118/WebSphere ansible-role-websphere-upgrade-local</li>
-<li>cd /c/Ansible/projects/ansible-role-websphere-upgrade-local</li>
+<li>git clone https://github.com/karthisai1118/WebSphere-local</li>
+<li>cd /c/Ansible/projects/WebSphere-local</li>
 <li>ls to display playbook *.yml files and subdirectory roles</li>
 </ul>
 
@@ -534,6 +534,7 @@ group: wasgroup
 
 <h2>Author Information</h2>
 Karthisai
+
 
 
 

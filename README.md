@@ -82,7 +82,7 @@ check /etc/security/limits on AIX and /etc/security/limits.conf on Linux for def
 <h2>Provided WebSphere, HTTP Server Stop, Start Scripts</h2>
 
 <p><b>Recommend to use provided WebSphere, HTTP Server stop, start scripts that are reliable with configuration files.</b> If existing Kyndyrl site stop, start scripts are used, see heading <b>Changes if Existing WebSphere, HTTP Server Stop, Start Scripts Used</b> for changes to perform.</p>
-<p>The files documented below can be found at https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade/tree/master/roles/was_http_stop_start/files</p>
+<p>The files documented below can be found at https://github.com/karthisai1118/WebSphere/tree/master/roles/was_http_stop_start/files</p>
 
 <h3>HTTP Server</h3>
 <p>Script rc.http with configuration file rc.http.config is used to stop and start HTTP Server.</p>
@@ -254,10 +254,10 @@ systemctl enable rc.was
 <p>Setup the soap.client.props or sas.client.props or ssl.client.props file so that there is no prompt for userid and password during stop and start of WebSphere Deployment Manager, Application Server and Node Agent. Check the WebSphere Application Server Network Deployment documentation on how to setup.<p>
 
 <h2>Creation of Ansible Tower Job Templates with Survey</h2>
-<p>Ansible project with SCM TYPE of Git, SCM URL https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade and SCM BRANCH/TAG/COMMIT of 1.0.6 will need to be defined.</p>
+<p>Ansible project with SCM TYPE of Git, SCM URL https://github.com/karthisai1118/WebSphere and SCM BRANCH/TAG/COMMIT of 1.0.6 will need to be defined.</p>
 
 <p>Under heading <b>Playbooks</b> is list of playbooks contained in this project that you can define Ansible Tower job templates with survey. Playbook was_upgrade requires a job template with a survey. The other playbooks can be defined with a job template and survey if will be used.</p>
-<p>https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade/tree/master/roles can be opened in a web browser. Then click on a individual role. For each individual role, click on defaults and then click on main.yml to review which Ansible variable default value will require a survey prompt in the Ansible job template survey.</p> 
+<p>https://github.com/karthisai1118/WebSphere/tree/master/roles can be opened in a web browser. Then click on a individual role. For each individual role, click on defaults and then click on main.yml to review which Ansible variable default value will require a survey prompt in the Ansible job template survey.</p> 
 <p>Web link https://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html documents how to create a job template with a survey. Add Survey Prompt input values can be copied from above Ansible roles default variables and comments in file main.yml.</p>
 <p>Playbook was_upgrade imports roles filesystem_freespace, mount_unmount_software_repository_nfs, was_http_stop_start, was_upgrade, was_http_list_installed_packages, was_http_logs_check_errors to review default Ansible variables in each role to determine if a Survey Prompt should be defined to input a value to override default value.</p>
 <p>Ansible job template with survey has no export, import function documented in https://access.redhat.com/solutions/3385441 with statement "Currently its not possible to export job templates to be consumed into another Ansible Tower instance". Below is survey added to required job template was_upgrade.</p>
@@ -405,7 +405,7 @@ systemctl enable rc.was
 <li>imcl install</li>
 </ul>
 <p>Above commands are used by the following two Perl scripts to generate IBM Installation Manager imcl install commands.</p>
-<p>Perl scripts was_fixpack_imcl_install_generate_cmds.pl, was_interim_fix_imcl_install_generate_cmds.pl documented below can be found at https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade/tree/master/roles/was_upgrade/files</p>
+<p>Perl scripts was_fixpack_imcl_install_generate_cmds.pl, was_interim_fix_imcl_install_generate_cmds.pl documented below can be found at https://github.com/karthisai1118/WebSphere/tree/master/roles/was_upgrade/files</p>
 <p>On AIX, execute Perl scripts was_fixpack_imcl_install_generate_cmds_aix.pl, was_interim_fix_imcl_install_generate_cmds_aix.pl for 64-bit Perl on AIX of /usr/bin/perl64 to prevent error message of opendir: Value too large to be stored in data type when NFS mounted.</p>
 <p>Ansible Tower job template mount_unmount_nfs could be launched on first test WebSphere server to perform NFS mount. This first test WebSphere server represents a group of WebSphere servers with same packages and same installation directory locations from command imcl listInstalledPackages -long.</p>
 <pre>
@@ -460,7 +460,7 @@ chmod -R 755 /software/was
 <li>Create Ansible Tower Job Template with Survey using playbook file was_upgrade2.yml. Also create a Survey prompt for Ansible variable name userid in Ansible Tower Job Template for playbook was_upgrade2.yml</li>
 </ul>
 
-<p>The Continuous-Engineering Git repository at https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade is read-only for multiple Kyndryl sites to use. To perform the above updates you need to clone this Git repository into your local Kyndryl site's Git repository. Below has instructions on how to perform.</p>
+<p>The Continuous-Engineering Git repository at https://github.com/karthisai1118/WebSphere is read-only for multiple Kyndryl sites to use. To perform the above updates you need to clone this Git repository into your local Kyndryl site's Git repository. Below has instructions on how to perform.</p>
 
 <p>Web link https://help.ocean.ibm.com/help/ui/#/article/github_ent_kyndryl/github_overview to read on how to create a GitHub organization for your Kyndryl organization and create a Git repository in your GitHub organization.</p>
 
@@ -471,7 +471,7 @@ chmod -R 755 /software/was
 <li>Select Private 
 </ul>
 
-<p>Copy and save the the web link with https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git where organization is your Kyndryl organization.</p>
+<p>Copy and save the the web link with https://github.com/karthisai1118/WebSphere.local.git where organization is your Kyndryl organization.</p>
 
 <p>From https://github.kyndryl.net/settings/tokens, create a personal access tokens with Generate new token. Tokens you have generated are used to access the GitHub API for git commands. Make sure to copy your new personal access token now. You won't be able to see it again. You could save the generated personal access token in https://1password.com/kyndryl</p>
 
@@ -480,24 +480,24 @@ chmod -R 755 /software/was
 <li>mkdir /c/Ansible</li>
 <li>mkdir /c/Ansible/projects</li>
 <li>cd /c/Ansible/projects</li>
-<li>git clone https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade ansible-role-websphere-upgrade-local</li>
+<li>git clone https://github.com/karthisai1118/WebSphere ansible-role-websphere-upgrade-local</li>
 <li>cd /c/Ansible/projects/ansible-role-websphere-upgrade-local</li>
 <li>ls to display playbook *.yml files and subdirectory roles</li>
 </ul>
 
 <p>Execution of Git Bash command <b>git remote -v</b> will show the Continuous-Engineering Git repository below. This needs to be updated to your Kyndryl organization ansible-role-websphere-upgrade-local.</p>
 <pre>
-origin  https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade.git (fetch)
-origin  https://github.kyndryl.net/Continuous-Engineering/ansible-role-websphere-upgrade.git (push)
+origin  https://github.com/karthisai1118/WebSphere.git (fetch)
+origin  https://github.com/karthisai1118/WebSphere.git (push)
 </pre>
 
 <p>Execute the following Git Bash command to set url to your Kyndryl organization Git repository ansible-role-websphere-upgrade-local.</p>
-git remote set-url origin https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git
+git remote set-url origin https://github.com/karthisai1118/WebSphere-local.git
 
 <p>Execution of Git Bash command <b>git remote -v</b> will show your Kyndyrl organization ansible-role-websphere-upgrade-local below.</p>
 <pre>
-origin  https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git (fetch)
-origin  https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git (push)
+origin  https://github.com/karthisai1118/WebSphere-local.git (fetch)
+origin  https://github.com/karthisai1118/WebSphere-local.git (push)
 </pre>
 
 <p>Perform the following local modifications.</p>
@@ -506,9 +506,9 @@ cd /c/Ansible/projects/ansible-role-websphere-upgrade-local/roles/was_http_stop_
 Copy file was_http_stop_start.sh to another location. Update the copy of this file to use your local stop, start 
 scripts for IBM HTTP Server and WebSphere and test that stop, start is successful.
 Copy updated, tested file was_http_stop_start.sh to 
-/c/Ansible/projects/ansible-role-websphere-upgrade-local/roles/was_http_stop_start/files
+/c/Ansible/projects/websphere-local/roles/was_http_stop_start/files
 
-cd /c/Ansible/projects/ansible-role-websphere-upgrade-local/roles/was_upgrade/defaults
+cd /c/Ansible/projects/websphere-local/roles/was_upgrade/defaults
 Edit file main.yml
 Uncomment line below and update value to userid
 #userid: wasn
@@ -521,19 +521,20 @@ group: wasgroup
 
 <p>Click on Git Bash and execute commands below.</p>
 <ul>
-<li>cd /c/Ansible/projects/ansible-role-websphere-upgrade-local</li>
-<li>git add /c/Ansible/projects/ansible-role-websphere-upgrade-local/roles/was_http_stop_start/files/was_http_stop_start.sh</li>
-<li>git add /c/Ansible/projects/ansible-role-websphere-upgrade-local/roles/was_upgrade/defaults/main.yml</li>
+<li>cd /c/Ansible/projects/websphere-local</li>
+<li>git add /c/Ansible/projects/websphere-local/roles/was_http_stop_start/files/was_http_stop_start.sh</li>
+<li>git add /c/Ansible/projects/websphere-local/roles/was_upgrade/defaults/main.yml</li>
 <li>git commit -m 'Local changes to files was_http_stop_start.sh and defaults/main.yml for role was_upgrade'</li>
 <li>git push -u origin master</li>
 </ul>
 
-<p>From web link https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git, verify that the above local modifications for files was_http_stop_start.sh, main.yml show.</p>
+<p>From web link https://github.com/karthisai1118/WebSphere-local.git, verify that the above local modifications for files was_http_stop_start.sh, main.yml show.</p>
 
-<p>Update Ansible Tower project for WebSphere Upgrade to SCM URL to https://github.kyndryl.net/organization/ansible-role-websphere-upgrade-local.git where organization is your Kyndryl organization. Click the icon for Ansible Tower project for WebSphere Upgrade to Get latest SCM revision.</p>
+<p>Update Ansible Tower project for WebSphere Upgrade to SCM URL to https://github.com/karthisai1118/WebSphere-local.git where organization is your Kyndryl organization. Click the icon for Ansible Tower project for WebSphere Upgrade to Get latest SCM revision.</p>
 
 <p>Update Ansible Tower Job Template for WebSphere Upgrade for playbook was_upgrade2.yml. Also create a Survey prompt for Ansible variable name userid in Ansible Tower Job Template for playbook was_upgrade2.yml.</p>
 
 <h2>Author Information</h2>
 Karthisai
+
 
